@@ -8,6 +8,8 @@ find_package(catkin REQUIRED
     roscpp
     rospy
     std_msgs
+    sensor_msgs
+    nav_msgs
     darknet_ros_msgs
 )
 

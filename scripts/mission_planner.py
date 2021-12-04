@@ -10,6 +10,7 @@
   ## COMMUNICATION
 # 3. DETECT_PATIENT
   ## detect a patient
+  ## visual servoing
 # 4. WAIT_FOR_RESPONSE_FROM_PATIENT
 # 5. GO_BACK_HOME
 
@@ -21,7 +22,7 @@
   ## Darknet_ros      - done
     ### usb_cam       - done
   ## Motor_controller - Wee
-  ## Servo_controller - Wee
+  ## Servo_controller - Doyoon
 # JS
   ## Comm             - Captain Kee
 
@@ -31,17 +32,15 @@
       #### data[0] = patient_info.ID
       #### data[1] = object_info.ID
       #### data[2] = object_info.counts
-      #### data[3] = target_point.x
-      #### data[4] = target_point.y
+      #### data[3] = targetPoint.x
+      #### data[4] = targetPoint.y
     ### std_msgs/Int32
       #### Go to patient [0]
       #### Go to home [1]
-    ### std_msgs/String
-      #### Note msg for patient
   ## Navigation data
-    ### navigation_msgs/Odometry
+    ### nav_msgs/Odometry
   ## BoundingBox data
-    ### darknet_ros/BoundingBoxs
+    ### darknet_ros/BoundingBoxs "/darknet_ros/bounding_boxes"
       #### Header header
       #### Header image_header
       #### BoundingBox[] bounding_boxes
@@ -61,8 +60,8 @@
       #### float32 jerk
   ## Servo cmd data
     ### std_msgs/Float32MultiArray
-      #### data[0] = pan_angle
-      #### data[1] = tilt_angle
+      #### data[0] = panAngle
+      #### data[1] = tiltAngle
   ## Imu data
     ### sensor_msgs/Imu "/imu/data_raw"
   ## Lidar data
@@ -70,37 +69,38 @@
   ## Image data
     ### sensor_msgs/Image "/usb_cam/image_raw"
 
+### Pub & Sub ###
+### Mission Planner ###
+  # Subscriber
+    ## Communication data
+    ## Navigation data
+    ## BoundingBox data
+  # Publisher
+    ## Communication data
+    ## Motor cmd data
+    ## Servo cmd data
 
-### Mission Planner Pub & Sub ###
-# Subscriber
-  ## Communication data
-  ## Navigation data
-  ## BoundingBox data
-# Publisher
-  ## Communication data
-  ## Motor cmd data
-  ## Servo cmd data
+### Cartographer ###
+  # Subscriber
+    ## Imu data
+    ## Lidar data
+  # Publisher
+    ## Navigation data
 
-### Cartographer Pub & Sub ###
-# Subscriber
-  ## Imu data
-  ## Lidar data
-# Publisher
-  ## Navigation data
+### Darknet_ros ###
+  # Subscriber
+    ## Image data
+  # Publisher
+    ## BoundingBox data
 
-### Darknet_ros Pub & Sub ###
-# Subscriber
-  ## Image data
-# Publisher
-  ## BoundingBox data
+### Motor_controller ###
+  # Subscriber
+    ## Motor cmd data
+    ## Navigation data
 
-### Motor_controller Pub & Sub ###
-# Subscriber
-  ## Motor cmd data
-
-### Servo_controller Pub & Sub ###
-# Subscriber
-  ## Servo cmd data
+### Servo_controller ###
+  # Subscriber
+    ## Servo cmd data
 
 
 ## FSM(Finite State Machine) state
@@ -117,40 +117,21 @@
 #     - PAUSE
 #     - DETECTION
 
-
-
-### Objects ###
-
-# 1. JETBOT
-# 2. COMM
-
-
-
-### 1. JETBOT Functions ###
-# 1. STANDBY
-# 2. WAYPOINT
-## input: goal point
-## output: check arrival
-# 3. PAUSE
-# 4. DETECTION
-## input: image
-## output: object (u, v [px])
-
-### 2. COMM Functions ###
-
-
-
-import rospy
-
-from std_msgs.msg import Float32
-from darknet_ros_msgs.msg import BoundingBoxes
+#!/usr/bin/env python
 
 import sys
 import signal
 from enum import Enum, auto
-
 import numpy as np
 
+import rospy
+
+from std_msgs.msg import Int32
+from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import String
+from nav_msgs.msg import Odometry
+from ackermann_msgs.msg import AckermannDrive
+from darknet_ros_msgs.msg import BoundingBoxes
 
 def signal_handler(signal,frame):
 	print('pressed ctrl + c!!!')
@@ -159,55 +140,115 @@ signal.signal(signal.SIGINT,signal_handler)
 
 class States(Enum):
   IDLE = auto()
-  COMMUNICATION = auto()
-  PATH_PLANNING = auto()
-  OPERATION = auto()
-
-
+  GO_TO_PATIENT = auto()
+  DETECT_PATIENT = auto()
+  WAIT_FOR_RESPONSE_FROM_PATIENT = auto()
+  GO_BACK_HOME = auto()
 
 class MissionPlanner:
   def __init__(self, comm):
     print("missionPlanner init")
     rospy.init_node('missionPlanner', anonymous=True)
+    rospy.Subscriber('/comm/info', Float32, self.infoCB)
+    rospy.Subscriber('/comm/state', Int32, self.stateCB)
+    rospy.Subscriber('/odom', Odometry, self.odomCB)
     rospy.Subscriber('/darknet_ros/bounding_boxes', BoundingBoxes , self.boxCB)
-    self.pub = rospy.Publisher("mission/state", Float32, queue_size=1) # mission State
+    self.motorPub = rospy.Publisher("/cmd/motor", AckermannDrive, queue_size=1)
+    self.servoPub = rospy.Publisher("/cmd/servo", Float32MultiArray, queue_size=1)
+
+    self.odom = Odometry()
+    self.servoCmd = Float32MultiArray()
+
+    self.cur_pos_m = np.array([0.0, 0.0, 0.0])
+
+    self.patientInfoID = 0
+    self.objectInfoID = 0
+    self.objectInfoCounts = 0
+    self.targetPositionX = 0
+    self.targetPositionY = 0
+
+
     self.hi='Hello!'
     self.a = 0
-    self.target_class = 0 # person
+    self.targetClass = 0 # person
+    self.detectFlag = False
+    self.targetServoPan = 0
+    self.targetY = 0
     self.detect_flag = False
+
+    self.callbacks = {}
+
 
     # initial state
     self.state = States.IDLE
 
     #
-    self.target_point = np.array([0.0, 0.0])
+    self.targetPoint = np.array([0.0, 0.0])
 
     # comm instance
     self.comm = comm
 
 
-  def idle_transition():
+  def idle_transition(self):
     self.state = States.IDLE
+
+  def go_to_patient_transition(self):
+    self.state = States.GO_TO_PATIENT
+    # calculate motor/servo cmd
+    cmd = generate_cmd()
+    # motorPub.publish
+
+
+  def detect_patient_transition(self):
+    self.state = States.DETECT_PATIENT
+
+  def wait_for_response_from_patient(self):
+    self.state = States.WAIT_FOR_RESPONSE_FROM_PATIENT
+
+  def infoCB(self, msg):
+    self.patientInfoID = msg.data[0]
+    self.objectInfoID = msg.data[1]
+    self.objectInfoCounts = msg.data[2]
+    self.targetPositionX = msg.data[3]
+    self.targetPositionY = msg.data[4]
+
+  def stateCB(self, msg):
+    pass
+
+  def odomCB(self, msg):
+    self.odom = msg
+    self.cur_pos_m[0] = self.odom.pose.pose.position.x
+    self.cur_pos_m[1] = self.odom.pose.pose.position.y
+    self.cur_pos_m[2] = self.odom.pose.pose.position.z
 
   def boxCB(self, msg):
     for box in msg.bounding_boxes:
-      center_x_arr = []
-      center_y_arr = []
-      if (box.id == self.target_class):
-        center_x = (box.xmax + box.xmin)/2.
-        center_y = (box.ymax + box.ymin)/2.
-        center_x_arr.append(center_x)
-        center_y_arr.append(center_y)
-    if(len(center_x_arr) != 0):
-      self.detect_flag = True
+      centerXArr = []
+      centerYArr = []
+      if (box.id == self.targetClass):
+        centerX = (box.xmax + box.xmin)/2.
+        centerY = (box.ymax + box.ymin)/2.
+        centerXArr.append(centerX)
+        centerYArr.append(centerY)
+    if(len(centerXArr) != 0):
+      self.detectFlag = True
       # get detected object close to the center
-      # obj_index = center_x_arr.index(max(center_x_arr))
-      # self.center_X = max(center_x_arr)
-      # self.center_Y = center_y_arr[obj_index]
-      rospy.loginfo("[boxCB] x : %f, y : %f", self.center_X , self.center_Y)
+      # obj_index = centerXArr.index(max(centerXArr))
+      # self.centerX = max(centerXArr)
+      # self.centerY = centerYArr[obj_index]
+      targetX = np.average(centerXArr)
+      targetY = np.average(centerYArr)
+      rospy.loginfo("[boxCB] x : %f, y : %f", targetX , targetY)
     else:
-      self.detect_flag = False
-      rospy.loginfo("[boxCB] not detect time : %d", self.not_detect_time)
+      self.detectFlag = False
+
+  def generate_cmd(self):
+    #self.cur_pos_m
+    #self.target_point
+    motor_cmd = np.array([0.0, 0.0])
+    servo_cmd = np.array([0.0, 0.0])
+    return {"motor_cmd": motor_cmd, "servo_cmd": servo_cmd}
+
 
 # 1. IDLE (waiting for connection)
   ## waiting for request from patient
@@ -218,24 +259,50 @@ class MissionPlanner:
   ## COMMUNICATION
 # 3. DETECT_PATIENT
   ## detect a patient
+  ## visual servoing
 # 4. WAIT_FOR_RESPONSE_FROM_PATIENT
 # 5. GO_BACK_HOME
   def run(self):
     print("run!")
-    mission_state = 1
-    if (mission_state == 1): # IDLE
+    if (self.state == States.IDLE):
+
       pass
-    elif (mission_state == 2): # GO_TO_PATIENT
+
+    elif (self.state == States.GO_TO_PATIENT):
+      print("Go to the patient!")
+
+      ## COMMUNICATION
+
+      ## DETECT_OBSTACLES
+
+      ## CONTROL
+
       pass
-    elif (mission_state == 3): # DETECT_PATIENT
+
+    elif (self.state == States.DETECT_PATIENT):
+      print("Detect the patient!")
+
+      if (self.detect_flag == True):
+        self.servoCmd.data[0] = self.targetServoPan
+        self.servoCmd.data[1] = self.targetY
+        self.servoPub.publish(self.servoCmd)
+      else:
+        print("Cannot detect the patient!")
+
       pass
-    elif (mission_state == 4): # WAIT_FOR_RESPONSE_FROM_PATIENT
+
+    elif (self.state == States.WAIT_FOR_RESPONSE_FROM_PATIENT):
+      print("Wait for response from the patient!")
+
       pass
-    elif (mission_state == 5): # GO_BACK_HOME
+
+    elif (self.state == States.GO_BACK_HOME):
+      print("Go back home!")
+
       pass
+
     else:
       print("wrong mission state")
-
 
 
 
