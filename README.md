@@ -1,0 +1,2 @@
+# Magok
+Magok Hakathon repository 
