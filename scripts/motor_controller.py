@@ -2,13 +2,16 @@
 
 import sys
 import signal
-import tf
 
 import rospy
 import numpy as np
 
 from nav_msgs.msg import Odometry
 from ackermann_msgs.msg import AckermannDrive
+
+
+# export PYTHONPATH=$PYTHONPATH:/home/jetbot/jetbot
+from jetbot import Robot 
 
 def signal_handler(signal,frame):
 	print('pressed ctrl + c!!!')
@@ -28,7 +31,7 @@ class MotorController:
     self.velL_mps = 0
 
     self.steeringAngle = 0
-    self.speed_mps = 0
+    self.speed_mps = 10
     self.speedRight_mps = 0
     self.speedLeft_mps = 0
 
@@ -37,6 +40,8 @@ class MotorController:
 
     self.KpSteering = 0.1
     self.KpSpeed = 0.1
+    
+    self.robot = Robot()
 
   def cmdMotorCB(self, msg):
     self.steeringAngle = msg.steering_angle
@@ -48,7 +53,8 @@ class MotorController:
             msg.pose.pose.orientation.y,
             msg.pose.pose.orientation.z,
             msg.pose.pose.orientation.w,)
-    self.euler = tf.transformations.euler_from_quaternion(q)
+    
+    self.euler = quaternion2yaw(q)
 
     self.velF_mps = msg.twist.twist.linear.x * np.cos(self.euler.yaw) + msg.twist.twist.linear.y * np.sin(self.euler.yaw)
     self.velL_mps = msg.twist.twist.linear.x * -np.sin(self.euler.yaw) +msg.twist.twist.linear.x * np.cos(self.euler.yaw)
@@ -59,9 +65,16 @@ class MotorController:
     return a * speedRight + b
 
   def speed2MotorCmdLeft(self, speedLeft):
-    a = 1.0
+    a = 0.9444
     b = 0.0
     return a * speedLeft + b
+
+  def quaternion2yaw(self, q):
+        
+    siny_cosp = 2 * (q(0) * q(1) + q(2) * q(3))
+    cosy_cosp = 1 - 2 * (q(1) * q(1) + q(2) * q(2))
+    yaw = np.atan2(siny_cosp, cosy_cosp)
+    return yaw 
 
   def run(self):
     rosRate = rospy.Rate(20)
@@ -71,9 +84,13 @@ class MotorController:
       self.cmdMotorLeft = self.speed2MotorCmdLeft(self.speedLeft_mps)
       self.cmdMotorRight = self.speed2MotorCmdRight(self.speedRight_mps)
       # TODO: use API to control motor
+      self.robot.left_motor.value = self.cmdMotorLeft
+      self.robot.right_motor.value = self.cmdMotorRight
+      
+        
       print("cmdMotorLeft, cmdMotorRight: [" + str(self.cmdMotorLeft) + ", " + str(self.cmdMotorRight) + "]")
       rosRate.sleep()
-
+      
 # main
 if __name__ == "__main__":
   motorController = MotorController()

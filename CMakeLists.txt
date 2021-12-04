@@ -17,8 +17,6 @@ find_package(catkin REQUIRED
 ## catkin specific configuration ##
 ###################################
 catkin_package(
-  INCLUDE_DIRS
-    include
   CATKIN_DEPENDS
     darknet_ros_msgs
 )
