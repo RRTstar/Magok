@@ -1,6 +1,6 @@
 <launch>
-  <node pkg="mission_planner" type="motor_controller.py" name="mission_planner" output="screen">
+  <node pkg="mission_planner" type="motor_controller.py" name="motor_ctrl" output="screen">
   </node>
-  <node pkg="mission_planner" type="servo_controller.py" name="mission_planner" output="screen">
+  <node pkg="mission_planner" type="servo_controller.py" name="servo_ctrl" output="screen">
   </node>
 </launch>
