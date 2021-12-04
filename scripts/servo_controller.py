@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import signal
@@ -12,7 +12,7 @@ import math
 def signal_handler(signal,frame):
 	print('pressed ctrl + c!!!')
 	sys.exit(0)
-  signal.signal(signal.SIGINT,signal_handler)
+signal.signal(signal.SIGINT,signal_handler)
 
 class ServoController:
   def __init__(self):
