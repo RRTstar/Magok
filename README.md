@@ -1,4 +1,5 @@
-![image]
+![image (1)](https://user-images.githubusercontent.com/63459737/144733402-0cc5dbda-bd6c-4c2f-8e83-e1bccf57706a.png)
+
 [Mission Plan]
 
 # FSM(Finite State Machine) state
