@@ -1,6 +1,21 @@
 ![image (1)](https://user-images.githubusercontent.com/63459737/144733402-0cc5dbda-bd6c-4c2f-8e83-e1bccf57706a.png)
 
-[Mission Plan]
+![web_screen_patient_side](https://user-images.githubusercontent.com/18085958/144733575-e0116119-04a9-4e35-bdb0-edd80ef390de.png)
+
+# Development Env.
+- ROS melodic
+- Used Open Source Frameworks & Libraries
+  - navigation 
+  - catographer_ros
+  - darknet ros with YOLO
+  - jetson_camera
+  - rplidar_ros
+  - pointcloud_to_laserscan
+  - usb_cam
+- Used Hardware
+  - Jetbot AI Advanced (made by yahboom)
+  - Jetson nano
+---
 
 # FSM(Finite State Machine) state
 1. IDLE
