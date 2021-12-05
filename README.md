@@ -7,7 +7,31 @@
 - Used Open Source Frameworks & Libraries
   - navigation 
   - catographer_ros
+    - Modify backpack_2d.lua file
+      - ```num_point_clouds = 1,```
   - darknet ros with YOLO
+    - Modify darknet_ros.launch file
+      - ```<arg name="image" default="/main_camera/image_raw" />```
+    - Add yolo_v2_tiny.launch
+      ```
+        <?xml version="1.0" encoding="utf-8"?>
+
+        <launch>
+
+          <!-- Use YOLOv3 -->
+          <arg name="network_param_file"         default="$(find darknet_ros)/config/yolov2-tiny.yaml"/>
+          <arg name="image" default="main_camera/image_raw" />
+
+
+          <!-- Include main launch file -->
+          <include file="$(find darknet_ros)/launch/darknet_ros.launch">
+            <arg name="network_param_file"    value="$(arg network_param_file)"/>
+            <arg name="image" value="$(arg image)" />
+          </include>
+
+        </launch>
+
+      ```
   - jetson_camera
   - rplidar_ros
   - pointcloud_to_laserscan
