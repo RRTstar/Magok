@@ -73,7 +73,7 @@ class MotorController:
     return a * speedRight + b
 
   def speed2MotorCmdLeft(self, speedLeft):
-    a = 0.9444
+    a = 1.0
     b = 0.0
     return a * speedLeft + b
 
@@ -87,8 +87,8 @@ class MotorController:
   def run(self):
     
     if self.is_joy == False:
-        self.speedLeft_mps = self.KpSpeed * (self.speed_mps - self.velF_mps) + self.KpSteering * self.steeringAngle
-        self.speedRight_mps = self.KpSpeed * (self.speed_mps - self.velF_mps) - self.KpSteering * self.steeringAngle
+        self.speedLeft_mps = self.KpSpeed * (self.speed_mps - self.velF_mps) - self.KpSteering * self.steeringAngle
+        self.speedRight_mps = self.KpSpeed * (self.speed_mps - self.velF_mps) + self.KpSteering * self.steeringAngle
 
     self.cmdMotorLeft = self.speed2MotorCmdLeft(self.speedLeft_mps)
     self.cmdMotorRight = self.speed2MotorCmdRight(self.speedRight_mps)    

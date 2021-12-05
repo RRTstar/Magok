@@ -5,4 +5,8 @@
   </node>
   <node pkg="mission_planner" type="servo_controller.py" name="servo_ctrl" output="screen">
   </node>
+  <node pkg="joy" type="joy_node" name="joy_node" output="screen">
+  </node>
+  <node pkg="myahrs_driver" type="myahrs_driver" name="myahrs_driver" output="screen">
+  </node>
 </launch>

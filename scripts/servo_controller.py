@@ -34,13 +34,13 @@ class ServoController:
     self.is_joy = False 
 
   def cmdServoCB(self, msg):
-    self.panCmdAngle = msg.data[0]
-    self.tiltCmdAngle = msg.data[1]
+   self.panCmdAngle = msg.data[0]
+   self.tiltCmdAngle = msg.data[1]
     
   def joyCB(self, msg):
     self.is_joy = True 
-    self.panCmdAngle = msg.axes[6] * 180 
-    self.tiltCmdAngle = msg.axes[7] * 90 if msg.axes[7]>0 else msg.axes[7] * 30 
+    self.panCmdAngle = msg.axes[0] * 180 
+    self.tiltCmdAngle = -msg.axes[2] * 90 if msg.axes[2]<0 else -msg.axes[2] * 30 
 
   def map_angle2raw(self, yaw, pitch):
     yaw_raw = int(yaw * 1400/90 + 2550)

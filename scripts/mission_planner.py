@@ -67,8 +67,8 @@ class MissionPlanner:
     self.maxSpeed = 2 # [m/s]
     self.kpSpeed = 0.5
 
-    self.minSteeringAngle = -90 # deg
-    self.maxSteeringAngle = 90 # deg
+    self.minSteeringAngle = -1.5708 # radian
+    self.maxSteeringAngle = 1.5708 # radian
     self.kpSteeringAngle = 1.05
 
   def goalCB(self, msg):
