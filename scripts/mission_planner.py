@@ -166,8 +166,8 @@ class MissionPlanner:
         self.state = States.GO_TO_PATIENT_BED
       elif self.goalType == 1:
         self.state = States.GO_TO_HOME
-      else:
-        rospy.loginfo("Received goal type is wrong!!")
+      # else:
+      #   rospy.loginfo("Received goal type is wrong!!")
 
     elif self.state == States.GO_TO_PATIENT_BED:
       rospy.loginfo("Go to the patient!")

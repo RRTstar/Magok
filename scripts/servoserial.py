@@ -87,9 +87,9 @@ class ServoSerial:
         time2_L = 0x0A
 
         checknum = (~(id + len + cmd + addr1 + addr2 + id_1 + pos1_H + pos1_L + time1_H + time1_L + id_2 + pos2_H + pos2_L + time2_H + time2_L)) & 0xff
-        print(checknum)
+        # print(checknum)
         data = [pack1, pack2, id, len, cmd, addr1, addr2, id_1, pos1_H, pos1_L, time1_H, time1_L, id_2, pos2_H, pos2_L, time2_H, time2_L, checknum]
-        print(bytes(data))
+        # print(bytes(data))
         #self.ser.write(bytes(data))
         self.ser.write(data)
 

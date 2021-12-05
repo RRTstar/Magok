@@ -8,6 +8,7 @@ import rospy
 from std_msgs.msg import Float32MultiArray
 from servoserial import ServoSerial
 import math
+from sensor_msgs.msg import Joy
 
 def signal_handler(signal,frame):
 	print('pressed ctrl + c!!!')
@@ -19,6 +20,7 @@ class ServoController:
     print("servoController init")
     rospy.init_node('servoController', anonymous=True)
     rospy.Subscriber('/rrt/cmd/servo', Float32MultiArray , self.cmdServoCB)
+    rospy.Subscriber('/joy', Joy, self.joyCB)
 
     self.cmdServoRight = 0
     self.cmdServoLeft = 0
@@ -28,10 +30,17 @@ class ServoController:
 
     # TODO: Servo init(setup)
     self.servo_device = ServoSerial()
+    
+    self.is_joy = False 
 
   def cmdServoCB(self, msg):
     self.panCmdAngle = msg.data[0]
     self.tiltCmdAngle = msg.data[1]
+    
+  def joyCB(self, msg):
+    self.is_joy = True 
+    self.panCmdAngle = msg.axes[6] * 180 
+    self.tiltCmdAngle = msg.axes[7] * 90 if msg.axes[7]>0 else msg.axes[7] * 30 
 
   def map_angle2raw(self, yaw, pitch):
     yaw_raw = int(yaw * 1400/90 + 2550)

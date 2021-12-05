@@ -8,6 +8,7 @@ import numpy as np
 
 from nav_msgs.msg import Odometry
 from ackermann_msgs.msg import AckermannDrive
+from sensor_msgs.msg import Joy
 
 
 # export PYTHONPATH=$PYTHONPATH:/home/jetbot/jetbot
@@ -24,6 +25,7 @@ class MotorController:
     rospy.init_node('motorController', anonymous=True)
     rospy.Subscriber('/rrt/cmd/motor', AckermannDrive , self.cmdMotorCB)
     rospy.Subscriber('/odom', Odometry , self.odomCB)
+    rospy.Subscriber('/joy', Joy, self.joyCB)
 
     self.euler = [0.0, 0.0, 0.0]
 
@@ -42,6 +44,13 @@ class MotorController:
     self.KpSpeed = 0.1
 
     self.robot = Robot()
+    
+    self.is_joy = False 
+    
+  def joyCB(self, msg):
+    self.is_joy = True 
+    self.speedRight_mps = msg.axes[5] * 2
+    self.speedLeft_mps = msg.axes[1] * 2
 
   def cmdMotorCB(self, msg):
     self.steeringAngle = msg.steering_angle
@@ -76,10 +85,13 @@ class MotorController:
     return yaw
 
   def run(self):
-    self.speedLeft_mps = self.KpSpeed * (self.speed_mps - self.velF_mps) + self.KpSteering * self.steeringAngle
-    self.speedRight_mps = self.KpSpeed * (self.speed_mps - self.velF_mps) - self.KpSteering * self.steeringAngle
+    
+    if self.is_joy == False:
+        self.speedLeft_mps = self.KpSpeed * (self.speed_mps - self.velF_mps) + self.KpSteering * self.steeringAngle
+        self.speedRight_mps = self.KpSpeed * (self.speed_mps - self.velF_mps) - self.KpSteering * self.steeringAngle
+
     self.cmdMotorLeft = self.speed2MotorCmdLeft(self.speedLeft_mps)
-    self.cmdMotorRight = self.speed2MotorCmdRight(self.speedRight_mps)
+    self.cmdMotorRight = self.speed2MotorCmdRight(self.speedRight_mps)    
     self.robot.left_motor.value = self.cmdMotorLeft
     self.robot.right_motor.value = self.cmdMotorRight
     print("cmdMotorLeft, cmdMotorRight: [" + str(self.cmdMotorLeft) + ", " + str(self.cmdMotorRight) + "]")
