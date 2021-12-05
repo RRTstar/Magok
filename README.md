@@ -83,7 +83,7 @@
       - rplidar
       - imu(myahrs+)
   3. Darknet_ros
-      - usb_cam
+      - jetson_camera
   4. Motor_controller
   5. Servo_controller
 
