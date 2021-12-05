@@ -1,4 +1,40 @@
-# mission flow (scenario)
+![image (1)](https://user-images.githubusercontent.com/63459737/144733402-0cc5dbda-bd6c-4c2f-8e83-e1bccf57706a.png)
+
+![web_screen_patient_side](https://user-images.githubusercontent.com/18085958/144733575-e0116119-04a9-4e35-bdb0-edd80ef390de.png)
+
+# Development Env.
+- ROS melodic
+- Used Open Source Frameworks & Libraries
+  - navigation 
+  - catographer_ros
+  - darknet ros with YOLO
+  - jetson_camera
+  - rplidar_ros
+  - pointcloud_to_laserscan
+  - usb_cam
+- Used Hardware
+  - Jetbot AI Advanced (made by yahboom)
+  - Jetson nano
+---
+
+# FSM(Finite State Machine) state
+1. IDLE
+2. COMMUNICATION
+    - Goal point 받기
+    - 환자 정보 받기
+    - 물품 정보 받기
+    - 요청 결과 알리기
+    - 미션 수행 요청 받기
+3. PATH_PLANNING
+4. OPERATION
+    - MOVING (Controller)
+    - PAUSE
+    - DETECTION
+
+---
+
+# Mission Flow
+## secnario
 1. IDLE
     - waiting for request from medical team
     - request: goal position
@@ -26,8 +62,12 @@
       - usb_cam
   4. Motor_controller
   5. Servo_controller
-## JS
-  1. Comm
+
+## JS (Server)
+  1. Communicate
+      - Patient -> Server
+      - Medical -> Server
+      - Server -> Robot
 
 ---
 
@@ -72,6 +112,7 @@
     - data[0] = [0] Go to patient, [1] Go to home
     - data[1] = targetPositionX
     - data[2] = targetPositionY
+
   - std_msgs/Bool ("/rrt/is_taken")
     - data = [False] not yet, [True] yes!!!!!!
 ## Navigation data
@@ -106,18 +147,3 @@
 ## Image data
   - sensor_msgs/Image "/usb_cam/image_raw"
 
----
-
-# FSM(Finite State Machine) state
-1. IDLE
-2. COMMUNICATION
-    - Goal point 받기
-    - 환자 정보 받기
-    - 물품 정보 받기
-    - 요청 결과 알리기
-    - 미션 수행 요청 받기
-3. PATH_PLANNING
-4. OPERATION
-    - MOVING (Controller)
-    - PAUSE
-    - DETECTION
